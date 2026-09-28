@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Gym">
+<title>Gym Tracker</title>
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--tx:#14171c;--mu:#6b7280;--ac:#2563eb;--ok:#16a34a;--pr:#d97706;--bd:#e3e6ea;--wn:#fef3c7;--wt:#92400e;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1116;--card:#181c23;--tx:#eef0f3;--mu:#98a1ae;--ac:#5b8cff;--ok:#34d399;--pr:#fbbf24;--bd:#272c35;--wn:#3a2f10;--wt:#fcd34d}}
+:root[data-theme="dark"]{--bg:#0e1116;--card:#181c23;--tx:#eef0f3;--mu:#98a1ae;--ac:#5b8cff;--ok:#34d399;--pr:#fbbf24;--bd:#272c35;--wn:#3a2f10;--wt:#fcd34d}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px -apple-system,system-ui,Helvetica,Arial,sans-serif;padding:0 12px 110px}
+h1{font-size:22px;margin:14px 0 2px}.sub{color:var(--mu);font-size:14px;margin-bottom:10px}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px}
+.chip{flex:none;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:20px;padding:9px 14px;font-size:15px}
+.chip.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px;margin:10px 0}
+.card.done{border-color:var(--ok)}
+.top{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.top b{font-size:17px}.sets{color:var(--mu);font-size:14px;white-space:nowrap}
+.note{background:var(--wn);color:var(--wt);border-radius:8px;padding:6px 9px;font-size:14px;margin-top:6px;font-weight:600}
+.meta{color:var(--mu);font-size:14px;margin:6px 0}
+.row{display:flex;gap:8px;align-items:stretch}
+.row button,.row input{height:52px;border-radius:12px;border:1px solid var(--bd);font-size:22px;background:var(--bg);color:var(--tx)}
+.row button.s{width:22px}.row .b{width:52px;flex:none}
+.row input{flex:1;min-width:0;text-align:center;font-weight:700}
+.row .save{flex:none;padding:0 18px;background:var(--ac);color:#fff;border:0;font-size:17px;font-weight:600}
+.msg{margin-top:6px;font-weight:700;color:var(--ok);min-height:0}.msg.pr{color:var(--pr);font-size:18px}
+.h{background:none;border:0;color:var(--ac);padding:6px 0 0;font-size:14px}
+.hist{font-size:14px;color:var(--mu);margin-top:6px}.hist svg{width:100%;height:60px;display:block}
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--bd);padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:10px}
+.bar .t{flex:1;font-size:22px;font-weight:700}.bar button{border:0;border-radius:10px;padding:11px 16px;font-size:15px;background:var(--ac);color:#fff}
+.bar button.g{background:var(--bd);color:var(--tx)}
+.foot{text-align:center;margin:18px 0}.foot button{background:none;border:0;color:var(--ac);font-size:15px}
+#bk{display:none;background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px;margin:10px 0}
+#bk textarea{width:100%;height:120px;background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:8px;font-size:12px}
+#bk button{margin:6px 6px 0 0;padding:9px 14px;border-radius:10px;border:0;background:var(--ac);color:#fff}
+</style></head><body>
+<h1 id="ttl">Workout</h1><div class="sub" id="sub"></div>
+<div class="chips" id="chips"></div>
+<div id="list"></div>
+<div class="foot"><button id="bkb">Backup / Restore</button></div>
+<div id="bk"><div class="meta">Copy this text somewhere safe (Notes, email). To restore, paste it here and tap Import.</div><textarea id="ta"></textarea><button id="imp">Import</button><button id="cp">Copy</button></div>
+<div class="bar"><div class="t" id="tm">Rest timer: 1:00</div><button id="ts">Start</button><button class="g" id="tx">Reset</button></div>
+<script>
+const STD=['Decline sit-ups',3];
+const D={
+Legs:[['Leg press',4],['Adductors',4],['Leg extension',3],['Seated leg curl',3],['Hack squat',3],['Abductors',3],['Calf raises',4],['Hanging leg lifts',3]],
+Upper:[['Chest press machine',4],['Lat pulldown',4],['Seated cable row',4],['Shoulder press machine',3],['Dumbbell curls',3],['Triceps pushdown',3],['Dumbbell lateral raises',3],['Rear delt machine',3],['Pec deck',3]],
+Lower:[['Leg press',4],['Adductors',4],['Seated leg curl',3],['Leg extension',3],['Hack squat',3],['Abductors',3],['Calf raises',4],['Hanging leg lifts',3]],
+Push:[['Chest press machine',4],['Incline dumbbell press',4],['Pec deck',3],['Cable chest fly',3],['Shoulder press machine',4],['Dumbbell lateral raises',3],['Triceps pushdown',4],['Triceps press machine',3],['Assisted dips',3]],
+Pull:[['Lat pulldown',4],['Seated cable row',4],['Dumbbell row',3],['Rear delt machine',3],['Straight-arm pulldown',3],['Dumbbell curls',4],['Hammer curls',3],['Preacher curl machine',3]],
+Rest:[]};
+for(const k in D)if(k!=='Rest')D[k].push(STD);
+const WK={1:'Legs',2:'Rest',3:'Upper',4:'Lower',5:'Rest',6:'Push',0:'Pull'};
+const SEED={'Chest press machine':40,'Lat pulldown':70,'Seated cable row':85,'Shoulder press machine':30,'Dumbbell curls':10,'Triceps press machine':90,'Triceps pushdown':20,'Dumbbell lateral raises':5,'Rear delt machine':45,'Pec deck':55,'Leg press':135,'Seated leg curl':65,'Hack squat':135,'Calf raises':115,'Dumbbell row':15,'Hammer curls':10,'Preacher curl machine':40,'Straight-arm pulldown':30,'Adductors':115,'Decline sit-ups':5,'Abductors':115,'Leg extension':95,'Incline dumbbell press':20};
+const NOTE={'Triceps press machine':'Bend elbows!','Leg press':'Lowest seat','Adductors':'Go as wide as possible','Decline sit-ups':"DON'T pull up with feet"};
+const REPS={'Decline sit-ups':1,'Hanging leg lifts':1},HAND={'Dumbbell curls':1,'Dumbbell lateral raises':1,'Dumbbell row':1,'Hammer curls':1,'Incline dumbbell press':1},LOW={'Assisted dips':1};
+const K='gym-tracker-v1';let S;try{S=JSON.parse(localStorage.getItem(K))}catch(e){}S=S&&S.log?S:{log:{}};
+const persist=()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}};
+const td=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const better=(n,a,b)=>LOW[n]?a<b:a>b;
+const unit=n=>REPS[n]?'reps':HAND[n]?'lb/hand':'lb';
+const step=n=>REPS[n]||HAND[n]?1:5;
+function best(n,ex){let b=SEED[n];for(const[d,v]of S.log[n]||[]){if(d===ex)continue;if(b==null||better(n,v,b))b=v}return b}
+function last(n,ex){const l=(S.log[n]||[]).filter(e=>e[0]!==ex);return l.length?l[l.length-1][1]:null}
+function today(n){const e=(S.log[n]||[]).find(e=>e[0]===td());return e?e[1]:null}
+let cur=WK[new Date().getDay()],draft={},msg={},open={};
+function draftOf(n){if(draft[n]==null){const t=today(n),l=last(n),b=best(n);draft[n]=t!=null?t:l!=null?l:b!=null?b:0}return draft[n]}
+function spark(n){const l=(S.log[n]||[]).slice(-12);if(l.length<2)return'<div>Log at least 2 sessions to see a chart.</div>';const v=l.map(e=>e[1]),mn=Math.min(...v),mx=Math.max(...v),r=(mx-mn)||1;
+const p=v.map((y,i)=>(i/(v.length-1)*300).toFixed(1)+','+(52-(y-mn)/r*44).toFixed(1));
+return'<svg viewBox="0 0 300 60" preserveAspectRatio="none"><polyline points="'+p.join(' ')+'" fill="none" stroke="var(--ac)" stroke-width="2.5" vector-effect="non-scaling-stroke"/></svg>'}
+function render(){
+const now=new Date();document.getElementById('ttl').textContent=cur==='Rest'?'Rest day':cur+' day';
+document.getElementById('sub').textContent=now.toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'})+(cur===WK[now.getDay()]?' · scheduled today':' · swapped');
+document.getElementById('chips').innerHTML=Object.keys(D).map(k=>'<button class="chip'+(k===cur?' on':'')+'" data-d="'+k+'">'+k+'</button>').join('');
+const L=D[cur];
+document.getElementById('list').innerHTML=L.length?L.map(([n,s],i)=>{const t=today(n),b=best(n),l=last(n,td());const u=unit(n);
+return'<div class="card'+(t!=null?' done':'')+'" data-i="'+i+'"><div class="top"><b>'+n+'</b><span class="sets">'+(REPS[n]?s+' sets':s+' × 8–10')+'</span></div>'+(NOTE[n]?'<div class="note">⚠ '+NOTE[n]+'</div>':'')+
+'<div class="meta">'+(LOW[n]?'Best (lowest assist): ':'PR: ')+(b!=null?b+' '+u:'none yet')+(l!=null?' · Last: '+l:'')+'</div>'+
+'<div class="row"><button class="b" data-a="-">−</button><input type="number" inputmode="decimal" value="'+draftOf(n)+'"><button class="b" data-a="+">+</button><button class="save" data-a="s">'+(t!=null?'Update':'Save')+'</button></div>'+
+'<div class="msg'+(msg[n]&&msg[n][0]?' pr':'')+'">'+(msg[n]?msg[n][1]:t!=null?'✓ Logged today: '+t+' '+u:'')+'</div>'+
+'<button class="h" data-a="h">'+(open[n]?'Hide history':'History')+'</button>'+(open[n]?'<div class="hist">'+spark(n)+(S.log[n]||[]).slice(-5).reverse().map(e=>'<div>'+e[0]+' — '+e[1]+' '+u+'</div>').join('')+'</div>':'')+'</div>'}).join(''):'<div class="card">Rest and recover. 💤 Pick another day above if you swapped.</div>'}
+let AC;function beep(){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();[0,.25,.5].forEach(t=>{const o=AC.createOscillator(),g=AC.createGain();o.connect(g);g.connect(AC.destination);o.frequency.value=880;g.gain.value=.2;o.start(AC.currentTime+t);o.stop(AC.currentTime+t+.15)});navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}}
+let tEnd=0,tI;const tm=document.getElementById('tm');
+function tick(){const r=Math.ceil((tEnd-Date.now())/1000);if(r<=0){clearInterval(tI);tm.textContent='Rest done — go!';beep();return}tm.textContent='Rest: '+Math.floor(r/60)+':'+String(r%60).padStart(2,'0')}
+function startT(){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)()}catch(e){}tEnd=Date.now()+60000;clearInterval(tI);tI=setInterval(tick,250);tick()}
+document.getElementById('ts').onclick=startT;
+document.getElementById('tx').onclick=()=>{clearInterval(tI);tm.textContent='Rest timer: 1:00'};
+document.getElementById('chips').onclick=e=>{const d=e.target.dataset.d;if(d){cur=d;render()}};
+document.getElementById('list').onclick=e=>{const a=e.target.dataset.a,c=e.target.closest('.card');if(!a||!c)return;const n=D[cur][c.dataset.i][0],inp=c.querySelector('input');
+if(a==='-'||a==='+'){let v=parseFloat(inp.value)||0;v=Math.max(0,v+(a==='+'?1:-1)*step(n));draft[n]=v;inp.value=v}
+else if(a==='h'){open[n]=!open[n];render()}
+else if(a==='s'){const v=parseFloat(inp.value);if(isNaN(v)||v<=0)return;draft[n]=v;const prev=best(n,td());const isPR=prev!=null&&better(n,v,prev);
+const l=(S.log[n]=(S.log[n]||[]).filter(x=>x[0]!==td()));l.push([td(),v]);persist();
+msg[n]=isPR?[1,'🏆 NEW PR! '+v+' '+unit(n)+' (was '+prev+')']:[0,prev==null?'✓ First entry saved':v===prev?'✓ Saved — matched your PR':'✓ Saved: '+v+' '+unit(n)];render();startT()}};
+document.getElementById('list').onchange=e=>{const c=e.target.closest('.card');if(c)draft[D[cur][c.dataset.i][0]]=parseFloat(e.target.value)||0};
+const bk=document.getElementById('bk'),ta=document.getElementById('ta');
+document.getElementById('bkb').onclick=()=>{bk.style.display=bk.style.display==='block'?'none':'block';ta.value=JSON.stringify(S)};
+document.getElementById('cp').onclick=()=>{ta.select();try{navigator.clipboard.writeText(ta.value)}catch(e){document.execCommand('copy')}};
+document.getElementById('imp').onclick=()=>{try{const o=JSON.parse(ta.value);if(!o.log)throw 0;S=o;persist();draft={};msg={};render();alert('Imported!')}catch(e){alert('That backup text is not valid.')}};
+render();
+</script></body></html>
